@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"github.com/applichic/lynou/database"
 	"github.com/applichic/lynou/model"
+	"github.com/applichic/lynou/util"
 	validator2 "github.com/applichic/lynou/validator"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -18,8 +18,6 @@ const codeErrorServer = "CODE_ERROR_SERVER"
 const codeErrorEmailAlreadyExists = "CODE_ERROR_EMAIL_ALREADY_EXISTS"
 const codeErrorEmailOrPasswordIncorrect = "CODE_ERROR_EMAIL_OR_PASSWORD_INCORRECT"
 
-var jwtKey = []byte("AllYourBase")
-
 type UserClaim struct {
 	User model.User
 	jwt.StandardClaims
@@ -31,7 +29,7 @@ type AuthController struct {
 // Create the access token with the user information
 func createAccessToken(user model.User) (string, error) {
 	user.Password = ""
-	expiresAt := time.Now().Add(15 * time.Minute)
+	expiresAt := time.Now().Add(time.Duration(util.Conf.JwtTokenExpiration) * time.Millisecond)
 	claims := UserClaim{
 		user,
 		jwt.StandardClaims{
@@ -41,7 +39,7 @@ func createAccessToken(user model.User) (string, error) {
 
 	// Generates access accessToken and refresh accessToken
 	unSignedToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return unSignedToken.SignedString(jwtKey)
+	return unSignedToken.SignedString([]byte(util.Conf.JwtSecret))
 }
 
 // Sign up the user and return the access token and refresh token
@@ -74,8 +72,8 @@ func (a *AuthController) SignUp(c *gin.Context) {
 
 	// Add the user in the database
 	user := model.User{Email: signUpUserForm.Email, Password: string(hashedPassword), Name: signUpUserForm.Name}
-	database.DB.NewRecord(user)
-	err = database.DB.Create(&user).Error
+	util.DB.NewRecord(user)
+	err = util.DB.Create(&user).Error
 
 	// Check if there is not an error during the database query
 	if err != nil {
@@ -111,8 +109,8 @@ func (a *AuthController) SignUp(c *gin.Context) {
 
 	// Save the refresh accessToken
 	token := model.Token{Token: refreshToken.String(), UserId: user.ID, IsValid: true}
-	database.DB.NewRecord(token)
-	err = database.DB.Create(&token).Error
+	util.DB.NewRecord(token)
+	err = util.DB.Create(&token).Error
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -127,7 +125,7 @@ func (a *AuthController) SignUp(c *gin.Context) {
 	c.JSONP(http.StatusOK, gin.H{
 		"accessToken":  accessToken,
 		"refreshToken": refreshToken,
-		"expiresIn":    900000,
+		"expiresIn":    util.Conf.JwtTokenExpiration,
 	})
 }
 
@@ -152,7 +150,7 @@ func (a *AuthController) Login(c *gin.Context) {
 
 	// Find the user
 	user := model.User{}
-	err = database.DB.Where("email = ?", loginUserForm.Email).First(&user).Error
+	err = util.DB.Where("email = ?", loginUserForm.Email).First(&user).Error
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -187,7 +185,7 @@ func (a *AuthController) Login(c *gin.Context) {
 
 	// Retrieve the refresh token
 	token := model.Token{}
-	err = database.DB.Where("user_id = ?", user.ID).First(&token).Error
+	err = util.DB.Where("user_id = ?", user.ID).First(&token).Error
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Impossible to retrieve the refresh token",
@@ -200,7 +198,7 @@ func (a *AuthController) Login(c *gin.Context) {
 	c.JSONP(http.StatusOK, gin.H{
 		"accessToken":  accessToken,
 		"refreshToken": token.Token,
-		"expiresIn":    900000,
+		"expiresIn":    util.Conf.JwtTokenExpiration,
 	})
 }
 
@@ -225,7 +223,7 @@ func (a *AuthController) RefreshAccessToken(c *gin.Context) {
 
 	// Get the user linked to the token
 	user := model.User{}
-	err = database.DB.
+	err = util.DB.
 		Joins("left join tokens on tokens.user_id = users.id").
 		Where("tokens.token = ?", refreshingTokenForm.RefreshToken).
 		First(&user).Error
@@ -253,6 +251,6 @@ func (a *AuthController) RefreshAccessToken(c *gin.Context) {
 	// Send the tokens
 	c.JSONP(http.StatusOK, gin.H{
 		"accessToken": accessToken,
-		"expiresIn":   900000,
+		"expiresIn":   util.Conf.JwtTokenExpiration,
 	})
 }

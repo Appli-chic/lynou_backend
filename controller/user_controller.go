@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"github.com/applichic/lynou/database"
 	"github.com/applichic/lynou/model"
 	"github.com/applichic/lynou/util"
 	"github.com/dgrijalva/jwt-go"
@@ -18,7 +17,7 @@ func (u *UserController) FetchUser(c *gin.Context) {
 	userClaims := token.Claims.(jwt.MapClaims)["User"].(map[string]interface{})
 
 	user := model.User{}
-	err := database.DB.Select("id, email, name").Where("id = ?", userClaims["ID"]).First(&user).Error
+	err := util.DB.Select("id, email, name").Where("id = ?", userClaims["ID"]).First(&user).Error
 
 	// Check if the user exists
 	if err != nil {

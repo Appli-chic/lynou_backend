@@ -21,7 +21,7 @@ func GetToken(c *gin.Context) (*jwt.Token, error) {
 
 	// Parse the token
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte("AllYourBase"), nil
+		return []byte(Conf.JwtSecret), nil
 	})
 
 	// Check if the token is correct and valid
