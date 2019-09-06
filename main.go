@@ -9,6 +9,7 @@ import (
 func main() {
 	// LoadConfiguration configurations
 	util.LoadConfiguration()
+	util.LoginToStorage()
 
 	// Init database
 	db, err := util.InitDB()
@@ -28,5 +29,9 @@ func main() {
 	config.AllowOrigins = []string{"http://lynou.com"}
 	router.Use(cors.New(config))
 
-	router.Run() // listen and serve on 0.0.0.0:8080
+	err = router.Run() // listen and serve on 0.0.0.0:8080
+
+	if err != nil {
+		panic(err)
+	}
 }

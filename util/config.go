@@ -16,6 +16,11 @@ type Config struct {
 	DatabaseMaxConnection int
 	JwtTokenExpiration    int
 	JwtSecret             string
+	OpenStackAuthUrl      string
+	OpenStackProjectName  string
+	OpenStackUsername     string
+	OpenStackPassword     string
+	OpenStackUrlContainer string
 }
 
 var Conf Config
@@ -46,5 +51,10 @@ func LoadConfiguration() {
 		DatabaseMaxConnection: databaseMaxConnection,
 		JwtTokenExpiration:    jwtTokenExpiration,
 		JwtSecret:             os.Getenv("JWT_SECRET"),
+		OpenStackAuthUrl:      os.Getenv("OPENSTACK_AUTH_URL"),
+		OpenStackProjectName:  os.Getenv("OPENSTACK_PROJECT_NAME"),
+		OpenStackUsername:     os.Getenv("OPENSTACK_USERNAME"),
+		OpenStackPassword:     os.Getenv("OPENSTACK_PASSWORD"),
+		OpenStackUrlContainer: os.Getenv("OPENSTACK_URL_CONTAINER"),
 	}
 }
