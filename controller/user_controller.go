@@ -12,20 +12,19 @@ import (
 type UserController struct {
 }
 
-// Fetch the user's data
+// Fetch user's data
 func (u *UserController) FetchUser(c *gin.Context) {
 	token, _ := util.GetToken(c)
 	userClaims := token.Claims.(jwt.MapClaims)["User"].(map[string]interface{})
 
 	user := model.User{}
-	err := database.DB.Where("id = ?", userClaims["ID"]).First(&user).Error
+	err := database.DB.Select("id, email, name").Where("id = ?", userClaims["ID"]).First(&user).Error
 
 	// Check if the user exists
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "User doesn't exist",
 			"code":  codeErrorServer,
-			"token": token,
 		})
 		return
 	}

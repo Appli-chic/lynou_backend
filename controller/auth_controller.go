@@ -28,6 +28,22 @@ type UserClaim struct {
 type AuthController struct {
 }
 
+// Create the access token with the user information
+func createAccessToken(user model.User) (string, error) {
+	user.Password = ""
+	expiresAt := time.Now().Add(15 * time.Minute)
+	claims := UserClaim{
+		user,
+		jwt.StandardClaims{
+			ExpiresAt: expiresAt.Unix(),
+		},
+	}
+
+	// Generates access accessToken and refresh accessToken
+	unSignedToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return unSignedToken.SignedString(jwtKey)
+}
+
 // Sign up the user and return the access token and refresh token
 func (a *AuthController) SignUp(c *gin.Context) {
 	// Retrieve the body
@@ -81,25 +97,8 @@ func (a *AuthController) SignUp(c *gin.Context) {
 	}
 
 	// Create the tokens
-	user.Password = ""
-	expiresAt := time.Now().Add(5 * time.Minute)
-	claims := UserClaim{
-		user,
-		jwt.StandardClaims{
-			ExpiresAt: expiresAt.Unix(),
-		},
-	}
-
-	claimsRefreshToken := &jwt.StandardClaims{
-		// Refresh tokens don't expire yet
-		Id: guuid.New().String(),
-	}
-
-	// Generates access accessToken and refresh accessToken
-	unSignedToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	accessToken, err := unSignedToken.SignedString(jwtKey)
-	unsignedRefreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsRefreshToken)
-	refreshToken, errRefreshToken := unsignedRefreshToken.SignedString(jwtKey)
+	accessToken, err := createAccessToken(user)
+	refreshToken, errRefreshToken := guuid.NewUUID()
 
 	// Send an error if the tokens didn't sign well
 	if err != nil || errRefreshToken != nil {
@@ -111,7 +110,7 @@ func (a *AuthController) SignUp(c *gin.Context) {
 	}
 
 	// Save the refresh accessToken
-	token := model.Token{Token: refreshToken, DoExpire: false, UserId: user.ID}
+	token := model.Token{Token: refreshToken.String(), UserId: user.ID, IsValid: true}
 	database.DB.NewRecord(token)
 	err = database.DB.Create(&token).Error
 
@@ -128,7 +127,7 @@ func (a *AuthController) SignUp(c *gin.Context) {
 	c.JSONP(http.StatusOK, gin.H{
 		"accessToken":  accessToken,
 		"refreshToken": refreshToken,
-		"expiresIn":    300000,
+		"expiresIn":    900000,
 	})
 }
 
@@ -175,18 +174,7 @@ func (a *AuthController) Login(c *gin.Context) {
 	}
 
 	// Create the tokens
-	user.Password = ""
-	expiresAt := time.Now().Add(5 * time.Minute)
-	claims := UserClaim{
-		user,
-		jwt.StandardClaims{
-			ExpiresAt: expiresAt.Unix(),
-		},
-	}
-
-	// Generates access accessToken and refresh accessToken
-	unSignedToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	accessToken, err := unSignedToken.SignedString(jwtKey)
+	accessToken, err := createAccessToken(user)
 
 	// Send an error if the tokens didn't sign well
 	if err != nil {
@@ -212,6 +200,59 @@ func (a *AuthController) Login(c *gin.Context) {
 	c.JSONP(http.StatusOK, gin.H{
 		"accessToken":  accessToken,
 		"refreshToken": token.Token,
-		"expiresIn":    300000,
+		"expiresIn":    900000,
+	})
+}
+
+// Refresh the access token thanks to a refresh token
+func (a *AuthController) RefreshAccessToken(c *gin.Context) {
+	// Retrieve the body
+	refreshingTokenForm := validator2.RefreshingTokenForm{}
+	if err := c.ShouldBindJSON(&refreshingTokenForm); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate the form
+	validate := validator.New()
+	err := validate.Struct(refreshingTokenForm)
+
+	// Check if the form is valid
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get the user linked to the token
+	user := model.User{}
+	err = database.DB.
+		Joins("left join tokens on tokens.user_id = users.id").
+		Where("tokens.token = ?", refreshingTokenForm.RefreshToken).
+		First(&user).Error
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Impossible to retrieve the user",
+			"code":  codeErrorServer,
+		})
+		return
+	}
+
+	// Create the access token
+	accessToken, err := createAccessToken(user)
+
+	// Send an error if the tokens didn't sign well
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Impossible to generate the access token",
+			"code":  codeErrorServer,
+		})
+		return
+	}
+
+	// Send the tokens
+	c.JSONP(http.StatusOK, gin.H{
+		"accessToken": accessToken,
+		"expiresIn":   900000,
 	})
 }

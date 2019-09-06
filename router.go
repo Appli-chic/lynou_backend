@@ -19,6 +19,7 @@ func InitRouter() *gin.Engine {
 		// Auth routes
 		api.POST("/auth", authController.SignUp)
 		api.POST("/auth/login", authController.Login)
+		api.GET("/auth/refresh", authController.RefreshAccessToken)
 
 		// Need to be logged in routes
 		loggedInGroup := api.Group("/")
