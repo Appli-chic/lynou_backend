@@ -22,14 +22,14 @@ func (u *UserController) FetchUser(c *gin.Context) {
 	// Check if the user exists
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "User doesn't exist",
+			"error": err.Error(),
 			"code":  codeErrorServer,
 		})
 		return
 	}
 
 	// Send the user information
-	c.JSONP(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"user": user,
 	})
 }

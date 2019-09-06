@@ -13,6 +13,7 @@ func InitRouter() *gin.Engine {
 	// Create controllers
 	authController := new(controller.AuthController)
 	userController := new(controller.UserController)
+	storageController := new(controller.StorageController)
 
 	api := router.Group("/api")
 	{
@@ -26,6 +27,8 @@ func InitRouter() *gin.Engine {
 		loggedInGroup.Use(util.AuthenticationRequired())
 		{
 			loggedInGroup.GET("/user", userController.FetchUser)
+			loggedInGroup.GET("/file/:path", storageController.DownloadImage)
+			loggedInGroup.PUT("/file/:name", storageController.UploadFile)
 		}
 	}
 

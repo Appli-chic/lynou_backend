@@ -65,7 +65,7 @@ func (a *AuthController) SignUp(c *gin.Context) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(signUpUserForm.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Impossible to hash this password",
+			"error": err.Error(),
 			"code":  codeErrorServer,
 		})
 	}
@@ -87,7 +87,7 @@ func (a *AuthController) SignUp(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Error while creating the user",
+			"error": err.Error(),
 			"code":  codeErrorServer,
 		})
 
@@ -114,7 +114,7 @@ func (a *AuthController) SignUp(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Error while saving the refresh token",
+			"error": err.Error(),
 			"code":  codeErrorServer,
 		})
 
@@ -177,7 +177,7 @@ func (a *AuthController) Login(c *gin.Context) {
 	// Send an error if the tokens didn't sign well
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Impossible to generate an accessToken",
+			"error": err.Error(),
 			"code":  codeErrorServer,
 		})
 		return
@@ -188,7 +188,7 @@ func (a *AuthController) Login(c *gin.Context) {
 	err = util.DB.Where("user_id = ?", user.ID).First(&token).Error
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Impossible to retrieve the refresh token",
+			"error": err.Error(),
 			"code":  codeErrorServer,
 		})
 		return

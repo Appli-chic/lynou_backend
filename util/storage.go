@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"git.openstack.org/openstack/golang-client/objectstorage/v1"
 	"git.openstack.org/openstack/golang-client/openstack"
+	"net/http"
 	"time"
 )
+
+var OpenstackSession *openstack.Session
 
 func LoginToStorage() {
 	creds := openstack.AuthOpts{
@@ -33,12 +36,19 @@ func LoginToStorage() {
 		panic(panicString)
 	}
 
-	// Get a file
-	_, body, err := objectstorage.GetObject(sess, Conf.OpenStackUrlContainer+"/pikachu.png")
-	if err != nil {
-		panicString := fmt.Sprint("GetObject Error:", err)
-		panic(panicString)
-	}
+	OpenstackSession = sess
+}
 
-	print(body)
+// Get a file in the object storage from the file path
+func DownloadObject(filePath string) ([]byte, error) {
+	_, body, err := objectstorage.GetObject(OpenstackSession, Conf.OpenStackUrlContainer+"/"+filePath)
+	return body, err
+}
+
+// Upload file in the object storage
+func UploadObject(filePath string, content *[]byte, contentType string) error {
+	headers := http.Header{}
+	headers.Add("Content-Type", contentType)
+	err := objectstorage.PutObject(OpenstackSession, content, Conf.OpenStackUrlContainer+"/"+filePath, headers)
+	return err
 }
