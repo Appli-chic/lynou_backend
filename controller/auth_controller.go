@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/applichic/lynou/model"
+	"github.com/applichic/lynou/service"
 	"github.com/applichic/lynou/util"
 	validator2 "github.com/applichic/lynou/validator"
 	"github.com/dgrijalva/jwt-go"
@@ -24,9 +25,18 @@ type UserClaim struct {
 }
 
 type AuthController struct {
+	userService  *service.UserService
+	tokenService *service.TokenService
 }
 
-// Create the access token with the user information
+func NewAuthController() *AuthController {
+	authController := new(AuthController)
+	authController.userService = new(service.UserService)
+	authController.tokenService = new(service.TokenService)
+	return authController
+}
+
+// Create the access token with the service information
 func createAccessToken(user model.User) (string, error) {
 	user.Password = ""
 	expiresAt := time.Now().Add(time.Duration(util.Conf.JwtTokenExpiration) * time.Millisecond)
@@ -42,7 +52,7 @@ func createAccessToken(user model.User) (string, error) {
 	return unSignedToken.SignedString([]byte(util.Conf.JwtSecret))
 }
 
-// Sign up the user and return the access token and refresh token
+// Sign up the service and return the access token and refresh token
 func (a *AuthController) SignUp(c *gin.Context) {
 	// Retrieve the body
 	signUpUserForm := validator2.SignUpUserForm{}
@@ -61,7 +71,7 @@ func (a *AuthController) SignUp(c *gin.Context) {
 		return
 	}
 
-	// Encrypt the user's password
+	// Encrypt the service's password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(signUpUserForm.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -70,10 +80,9 @@ func (a *AuthController) SignUp(c *gin.Context) {
 		})
 	}
 
-	// Add the user in the database
+	// Add the service in the database
 	user := model.User{Email: signUpUserForm.Email, Password: string(hashedPassword), Name: signUpUserForm.Name}
-	util.DB.NewRecord(user)
-	err = util.DB.Create(&user).Error
+	user, err = a.userService.Save(user)
 
 	// Check if there is not an error during the database query
 	if err != nil {
@@ -109,8 +118,7 @@ func (a *AuthController) SignUp(c *gin.Context) {
 
 	// Save the refresh accessToken
 	token := model.Token{Token: refreshToken.String(), UserId: user.ID, IsValid: true}
-	util.DB.NewRecord(token)
-	err = util.DB.Create(&token).Error
+	token, err = a.tokenService.Save(token)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -129,7 +137,7 @@ func (a *AuthController) SignUp(c *gin.Context) {
 	})
 }
 
-// Login the user and send back the access token and the refresh token
+// Login the service and send back the access token and the refresh token
 func (a *AuthController) Login(c *gin.Context) {
 	// Retrieve the body
 	loginUserForm := validator2.LoginUserForm{}
@@ -148,9 +156,8 @@ func (a *AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	// Find the user
-	user := model.User{}
-	err = util.DB.Where("email = ?", loginUserForm.Email).First(&user).Error
+	// Find the service
+	user, err := a.userService.FetchUserByEmail(loginUserForm.Email)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -184,8 +191,7 @@ func (a *AuthController) Login(c *gin.Context) {
 	}
 
 	// Retrieve the refresh token
-	token := model.Token{}
-	err = util.DB.Where("user_id = ?", user.ID).First(&token).Error
+	token, err := a.tokenService.FetchTokenByUserId(user.ID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -221,16 +227,11 @@ func (a *AuthController) RefreshAccessToken(c *gin.Context) {
 		return
 	}
 
-	// Get the user linked to the token
-	user := model.User{}
-	err = util.DB.
-		Joins("left join tokens on tokens.user_id = users.id").
-		Where("tokens.token = ?", refreshingTokenForm.RefreshToken).
-		First(&user).Error
-
+	// Get the service linked to the token
+	user, err := a.userService.FetchUserFromRefreshToken(refreshingTokenForm.RefreshToken)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Impossible to retrieve the user",
+			"error": "Impossible to retrieve the service",
 			"code":  codeErrorServer,
 		})
 		return

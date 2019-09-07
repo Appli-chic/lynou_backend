@@ -11,8 +11,8 @@ func InitRouter() *gin.Engine {
 	router := gin.Default()
 
 	// Create controllers
-	authController := new(controller.AuthController)
-	userController := new(controller.UserController)
+	authController := controller.NewAuthController()
+	userController := controller.NewUserController()
 	storageController := new(controller.StorageController)
 
 	api := router.Group("/api")

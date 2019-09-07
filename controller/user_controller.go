@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/applichic/lynou/model"
+	"github.com/applichic/lynou/service"
 	"github.com/applichic/lynou/util"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -9,17 +9,22 @@ import (
 )
 
 type UserController struct {
+	userService *service.UserService
 }
 
-// Fetch user's data
+func NewUserController() *UserController {
+	userController := new(UserController)
+	userController.userService = new(service.UserService)
+	return userController
+}
+
+// Fetch service's data
 func (u *UserController) FetchUser(c *gin.Context) {
 	token, _ := util.GetToken(c)
 	userClaims := token.Claims.(jwt.MapClaims)["User"].(map[string]interface{})
+	user, err := u.userService.FetchUserById(userClaims["ID"])
 
-	user := model.User{}
-	err := util.DB.Select("id, email, name").Where("id = ?", userClaims["ID"]).First(&user).Error
-
-	// Check if the user exists
+	// Check if the service exists
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -28,8 +33,8 @@ func (u *UserController) FetchUser(c *gin.Context) {
 		return
 	}
 
-	// Send the user information
+	// Send the service information
 	c.JSON(http.StatusOK, gin.H{
-		"user": user,
+		"service": user,
 	})
 }

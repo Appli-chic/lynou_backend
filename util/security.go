@@ -32,7 +32,7 @@ func GetToken(c *gin.Context) (*jwt.Token, error) {
 	return token, nil
 }
 
-// Retrieve the token to check if the user is authenticated
+// Retrieve the token to check if the service is authenticated
 func AuthenticationRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		_, err := GetToken(c)
