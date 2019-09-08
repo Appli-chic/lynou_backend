@@ -1,6 +1,7 @@
 package main
 
 import (
+	config2 "github.com/applichic/lynou/config"
 	"github.com/applichic/lynou/util"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -8,11 +9,11 @@ import (
 
 func main() {
 	// LoadConfiguration configurations
-	util.LoadConfiguration()
+	config2.LoadConfiguration()
 	util.LoginToStorage()
 
 	// Init database
-	db, err := util.InitDB()
+	db, err := config2.InitDB()
 	defer db.Close()
 
 	if err != nil {

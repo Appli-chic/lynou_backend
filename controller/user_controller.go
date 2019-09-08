@@ -3,7 +3,6 @@ package controller
 import (
 	"github.com/applichic/lynou/service"
 	"github.com/applichic/lynou/util"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -18,13 +17,11 @@ func NewUserController() *UserController {
 	return userController
 }
 
-// Fetch service's data
-func (u *UserController) FetchUser(c *gin.Context) {
-	token, _ := util.GetToken(c)
-	userClaims := token.Claims.(jwt.MapClaims)["User"].(map[string]interface{})
-	user, err := u.userService.FetchUserById(userClaims["ID"])
+// Fetch profile's photo
+func (u *UserController) FetchProfilePhoto(c *gin.Context) {
+	user, err := util.GetUserFromToken(c)
 
-	// Check if the service exists
+	// Check if the user exists
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -33,8 +30,27 @@ func (u *UserController) FetchUser(c *gin.Context) {
 		return
 	}
 
-	// Send the service information
+	// Send the user information
 	c.JSON(http.StatusOK, gin.H{
-		"service": user,
+		"photo": user.Photo,
+	})
+}
+
+// Fetch user's data
+func (u *UserController) FetchUser(c *gin.Context) {
+	user, err := util.GetUserFromToken(c)
+
+	// Check if the user exists
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+			"code":  codeErrorServer,
+		})
+		return
+	}
+
+	// Send the user information
+	c.JSON(http.StatusOK, gin.H{
+		"user": user,
 	})
 }

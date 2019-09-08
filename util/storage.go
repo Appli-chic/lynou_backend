@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"git.openstack.org/openstack/golang-client/objectstorage/v1"
 	"git.openstack.org/openstack/golang-client/openstack"
+	"github.com/applichic/lynou/config"
 	"net/http"
 	"time"
 )
@@ -12,10 +13,10 @@ var OpenstackSession *openstack.Session
 
 func LoginToStorage() {
 	creds := openstack.AuthOpts{
-		AuthUrl:     Conf.OpenStackAuthUrl,
-		ProjectName: Conf.OpenStackProjectName,
-		Username:    Conf.OpenStackUsername,
-		Password:    Conf.OpenStackPassword,
+		AuthUrl:     config.Conf.OpenStackAuthUrl,
+		ProjectName: config.Conf.OpenStackProjectName,
+		Username:    config.Conf.OpenStackUsername,
+		Password:    config.Conf.OpenStackPassword,
 	}
 
 	auth, err := openstack.DoAuthRequest(creds)
@@ -41,7 +42,7 @@ func LoginToStorage() {
 
 // Get a file in the object storage from the file path
 func DownloadObject(filePath string) ([]byte, error) {
-	_, body, err := objectstorage.GetObject(OpenstackSession, Conf.OpenStackUrlContainer+"/"+filePath)
+	_, body, err := objectstorage.GetObject(OpenstackSession, config.Conf.OpenStackUrlContainer+"/"+filePath)
 	return body, err
 }
 
@@ -49,6 +50,6 @@ func DownloadObject(filePath string) ([]byte, error) {
 func UploadObject(filePath string, content *[]byte, contentType string) error {
 	headers := http.Header{}
 	headers.Add("Content-Type", contentType)
-	err := objectstorage.PutObject(OpenstackSession, content, Conf.OpenStackUrlContainer+"/"+filePath, headers)
+	err := objectstorage.PutObject(OpenstackSession, content, config.Conf.OpenStackUrlContainer+"/"+filePath, headers)
 	return err
 }

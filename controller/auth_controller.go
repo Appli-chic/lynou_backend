@@ -1,9 +1,9 @@
 package controller
 
 import (
+	"github.com/applichic/lynou/config"
 	"github.com/applichic/lynou/model"
 	"github.com/applichic/lynou/service"
-	"github.com/applichic/lynou/util"
 	validator2 "github.com/applichic/lynou/validator"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -39,7 +39,7 @@ func NewAuthController() *AuthController {
 // Create the access token with the service information
 func createAccessToken(user model.User) (string, error) {
 	user.Password = ""
-	expiresAt := time.Now().Add(time.Duration(util.Conf.JwtTokenExpiration) * time.Millisecond)
+	expiresAt := time.Now().Add(time.Duration(config.Conf.JwtTokenExpiration) * time.Millisecond)
 	claims := UserClaim{
 		user,
 		jwt.StandardClaims{
@@ -49,7 +49,7 @@ func createAccessToken(user model.User) (string, error) {
 
 	// Generates access accessToken and refresh accessToken
 	unSignedToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return unSignedToken.SignedString([]byte(util.Conf.JwtSecret))
+	return unSignedToken.SignedString([]byte(config.Conf.JwtSecret))
 }
 
 // Sign up the service and return the access token and refresh token
@@ -81,7 +81,7 @@ func (a *AuthController) SignUp(c *gin.Context) {
 	}
 
 	// Add the service in the database
-	user := model.User{Email: signUpUserForm.Email, Password: string(hashedPassword), Name: signUpUserForm.Name}
+	user := model.User{Email: signUpUserForm.Email, Password: string(hashedPassword), Name: signUpUserForm.Name, Photo: "profile.png"}
 	user, err = a.userService.Save(user)
 
 	// Check if there is not an error during the database query
@@ -130,10 +130,10 @@ func (a *AuthController) SignUp(c *gin.Context) {
 	}
 
 	// Send the tokens
-	c.JSONP(http.StatusOK, gin.H{
+	c.JSONP(http.StatusCreated, gin.H{
 		"accessToken":  accessToken,
 		"refreshToken": refreshToken,
-		"expiresIn":    util.Conf.JwtTokenExpiration,
+		"expiresIn":    config.Conf.JwtTokenExpiration,
 	})
 }
 
@@ -204,7 +204,7 @@ func (a *AuthController) Login(c *gin.Context) {
 	c.JSONP(http.StatusOK, gin.H{
 		"accessToken":  accessToken,
 		"refreshToken": token.Token,
-		"expiresIn":    util.Conf.JwtTokenExpiration,
+		"expiresIn":    config.Conf.JwtTokenExpiration,
 	})
 }
 
@@ -252,6 +252,6 @@ func (a *AuthController) RefreshAccessToken(c *gin.Context) {
 	// Send the tokens
 	c.JSONP(http.StatusOK, gin.H{
 		"accessToken": accessToken,
-		"expiresIn":   util.Conf.JwtTokenExpiration,
+		"expiresIn":   config.Conf.JwtTokenExpiration,
 	})
 }

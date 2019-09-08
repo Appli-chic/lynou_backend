@@ -2,11 +2,28 @@ package util
 
 import (
 	"errors"
+	"github.com/applichic/lynou/config"
+	"github.com/applichic/lynou/model"
+	"github.com/applichic/lynou/service"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
 )
+
+func GetUserFromToken(c *gin.Context) (*model.User, error) {
+	token, err := GetToken(c)
+
+	if err != nil {
+		return nil, err
+	}
+
+	userService := new(service.UserService)
+	userClaims := token.Claims.(jwt.MapClaims)["User"].(map[string]interface{})
+	user, err := userService.FetchUserById(userClaims["ID"])
+
+	return &user, err
+}
 
 // Get token from the Authorization header
 func GetToken(c *gin.Context) (*jwt.Token, error) {
@@ -21,7 +38,7 @@ func GetToken(c *gin.Context) (*jwt.Token, error) {
 
 	// Parse the token
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte(Conf.JwtSecret), nil
+		return []byte(config.Conf.JwtSecret), nil
 	})
 
 	// Check if the token is correct and valid
