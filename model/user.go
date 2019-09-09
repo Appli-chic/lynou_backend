@@ -10,5 +10,6 @@ type User struct {
 	Password string  `gorm:"type:varchar(64);not null"`
 	Name     string  `gorm:"type:varchar(100);not null"`
 	Photo    string  `gorm:"type:varchar(255);not null"`
-	Tokens   []Token `gorm:"foreignkey:UserRefer"`
+	Tokens   []Token `gorm:"foreignkey:UserId"`
+	Posts    []Post  `gorm:"foreignkey:UserId"`
 }

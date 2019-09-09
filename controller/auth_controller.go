@@ -231,7 +231,7 @@ func (a *AuthController) RefreshAccessToken(c *gin.Context) {
 	user, err := a.userService.FetchUserFromRefreshToken(refreshingTokenForm.RefreshToken)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Impossible to retrieve the service",
+			"error": "Impossible to retrieve the user",
 			"code":  codeErrorServer,
 		})
 		return

@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gopkg.in/go-playground/validator.v9"
 	"net/http"
+	"strconv"
 )
 
 type PostController struct {
@@ -20,6 +21,46 @@ func NewPostController() *PostController {
 	PostController.postService = new(service.PostService)
 	PostController.userService = new(service.UserService)
 	return PostController
+}
+
+func (p *PostController) FetchPosts(c *gin.Context) {
+	user, err := util.GetUserFromToken(c)
+
+	// Check if the user exists
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+			"code":  codeErrorServer,
+		})
+		return
+	}
+
+	// Retrieve the page argument
+	pageString := c.DefaultQuery("page", "0")
+	page, err := strconv.Atoi(pageString)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+			"code":  codeErrorServer,
+		})
+		return
+	}
+
+	// Retrieve the posts
+	posts, err := p.postService.FetchWallPosts(user.ID, page)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+			"code":  codeErrorServer,
+		})
+		return
+	}
+
+	// Send the posts
+	c.JSON(http.StatusOK, gin.H{
+		"posts": posts,
+	})
 }
 
 // Create a new post
