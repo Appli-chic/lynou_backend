@@ -14,12 +14,14 @@ import (
 type PostController struct {
 	postService *service.PostService
 	userService *service.UserService
+	fileService *service.FileService
 }
 
 func NewPostController() *PostController {
 	PostController := new(PostController)
 	PostController.postService = new(service.PostService)
 	PostController.userService = new(service.UserService)
+	PostController.fileService = new(service.FileService)
 	return PostController
 }
 
@@ -95,7 +97,7 @@ func (p *PostController) CreatePost(c *gin.Context) {
 
 	// Create the post
 	post := model.Post{Text: postForm.Text, UserId: user.ID}
-	post, err = p.postService.Save(post)
+	err = p.postService.Save(&post)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -105,7 +107,16 @@ func (p *PostController) CreatePost(c *gin.Context) {
 		return
 	}
 
+	// Save files in the database
+	var fileList []model.File
+	for _, element := range postForm.Files {
+		file := model.File{PostId: post.ID, Name: element.Name, Thumbnail: element.Thumbnail, Type: element.Type}
+		err = p.fileService.Save(&file)
+		fileList = append(fileList, file)
+	}
+
 	// Send the post
+	post.Files = fileList
 	c.JSON(http.StatusOK, gin.H{
 		"post": post,
 	})

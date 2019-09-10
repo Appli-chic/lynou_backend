@@ -23,10 +23,11 @@ func InitDB() (*gorm.DB, error) {
 	// Set the database and migrate the models
 	db.DB().SetMaxIdleConns(Conf.DatabaseMaxConnection)
 	DB = db
-	db.AutoMigrate(&model.User{}, &model.Token{}, &model.Post{})
+	db.AutoMigrate(&model.User{}, &model.Token{}, &model.Post{}, &model.File{})
 
 	db.Model(&model.Token{}).AddForeignKey("user_id", "users(id)", "RESTRICT", "RESTRICT")
 	db.Model(&model.Post{}).AddForeignKey("user_id", "users(id)", "RESTRICT", "RESTRICT")
+	db.Model(&model.File{}).AddForeignKey("post_id", "posts(id)", "RESTRICT", "RESTRICT")
 
 	return db, nil
 }

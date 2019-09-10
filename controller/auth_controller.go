@@ -38,10 +38,11 @@ func NewAuthController() *AuthController {
 
 // Create the access token with the service information
 func createAccessToken(user model.User) (string, error) {
-	user.Password = ""
+	var newUser = model.User{}
+	newUser.ID = user.ID
 	expiresAt := time.Now().Add(time.Duration(config.Conf.JwtTokenExpiration) * time.Millisecond)
 	claims := UserClaim{
-		user,
+		newUser,
 		jwt.StandardClaims{
 			ExpiresAt: expiresAt.Unix(),
 		},
@@ -82,7 +83,7 @@ func (a *AuthController) SignUp(c *gin.Context) {
 
 	// Add the service in the database
 	user := model.User{Email: signUpUserForm.Email, Password: string(hashedPassword), Name: signUpUserForm.Name, Photo: "profile.png"}
-	user, err = a.userService.Save(user)
+	err = a.userService.Save(&user)
 
 	// Check if there is not an error during the database query
 	if err != nil {

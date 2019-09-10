@@ -33,10 +33,10 @@ func (u *UserService) FetchUserFromRefreshToken(refreshToken string) (model.User
 }
 
 // Save a user
-func (u *UserService) Save(user model.User) (model.User, error) {
+func (u *UserService) Save(user *model.User) error {
 	config.DB.NewRecord(user)
 	err := config.DB.Create(&user).Error
-	return user, err
+	return err
 }
 
 // Fetch the user's photo with the user's id

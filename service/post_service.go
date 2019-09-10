@@ -9,10 +9,10 @@ type PostService struct {
 }
 
 // Save a post
-func (p *PostService) Save(post model.Post) (model.Post, error) {
+func (p *PostService) Save(post *model.Post) error {
 	config.DB.NewRecord(post)
 	err := config.DB.Create(&post).Error
-	return post, err
+	return err
 }
 
 // Fetch wall posts
@@ -20,11 +20,17 @@ func (p *PostService) FetchWallPosts(userId interface{}, page int) ([]model.Post
 	nbRows := 10
 	var posts []model.Post
 	err := config.DB.
-		Joins("left join users on users.id = user_id").
 		Limit(nbRows).
 		Offset(page * nbRows).
 		Preload("User").
+		Preload("Files").
 		Order("created_at desc").
 		Find(&posts).Error
+
+	// Remove the hashed password in the user
+	for _, post := range posts {
+		post.User.Password = ""
+	}
+
 	return posts, err
 }
