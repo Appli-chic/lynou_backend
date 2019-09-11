@@ -108,15 +108,31 @@ func (p *PostController) CreatePost(c *gin.Context) {
 	}
 
 	// Save files in the database
-	var fileList []model.File
 	for _, element := range postForm.Files {
 		file := model.File{PostId: post.ID, Name: element.Name, Thumbnail: element.Thumbnail, Type: element.Type}
 		err = p.fileService.Save(&file)
-		fileList = append(fileList, file)
+
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+				"code":  codeErrorServer,
+			})
+			return
+		}
+	}
+
+	// Retrieve the post info
+	post, err = p.postService.FetchPostById(post.ID)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+			"code":  codeErrorServer,
+		})
+		return
 	}
 
 	// Send the post
-	post.Files = fileList
 	c.JSON(http.StatusOK, gin.H{
 		"post": post,
 	})

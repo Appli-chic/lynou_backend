@@ -29,6 +29,11 @@ func GetUserFromToken(c *gin.Context) (*model.User, error) {
 func GetToken(c *gin.Context) (*jwt.Token, error) {
 	reqToken := c.Request.Header.Get("Authorization")
 	splitToken := strings.Split(reqToken, "Bearer")
+
+	if len(splitToken) == 1 {
+		return nil, errors.New("no token found")
+	}
+
 	tokenString := strings.TrimSpace(splitToken[1])
 
 	// Check if there is a token given

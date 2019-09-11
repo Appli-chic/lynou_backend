@@ -41,9 +41,16 @@ func LoginToStorage() {
 }
 
 // Get a file in the object storage from the file path
-func DownloadObject(filePath string) ([]byte, error) {
+func DownloadObject(filePath string) (http.Header, []byte, error) {
+	var header http.Header
 	_, body, err := objectstorage.GetObject(OpenstackSession, config.Conf.OpenStackUrlContainer+"/"+filePath)
-	return body, err
+
+	// Get the content type
+	if err == nil {
+		header, err = objectstorage.GetObjectMeta(OpenstackSession, config.Conf.OpenStackUrlContainer+"/"+filePath)
+	}
+
+	return header, body, err
 }
 
 // Upload file in the object storage

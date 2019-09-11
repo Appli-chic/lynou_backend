@@ -13,9 +13,9 @@ type StorageController struct {
 }
 
 // Download specific file respecting roles
-func (s *StorageController) DownloadImage(c *gin.Context) {
+func (s *StorageController) DownloadFile(c *gin.Context) {
 	path := c.Param("path")
-	result, err := util.DownloadObject(path)
+	header, result, err := util.DownloadObject(path)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -25,7 +25,7 @@ func (s *StorageController) DownloadImage(c *gin.Context) {
 		return
 	}
 
-	c.Data(http.StatusOK, "image/png", result)
+	c.Data(http.StatusOK, header.Get("Content-Type"), result)
 }
 
 // Upload file in the object storage

@@ -36,7 +36,7 @@ func InitRouter() *gin.Engine {
 			loggedInGroup.GET("/posts", postController.FetchPosts)
 
 			// Storage
-			loggedInGroup.GET("/file/:path", storageController.DownloadImage)
+			loggedInGroup.GET("/file/:path", storageController.DownloadFile)
 			loggedInGroup.POST("/file/:name", storageController.UploadFile)
 		}
 	}

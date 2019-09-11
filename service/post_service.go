@@ -8,6 +8,20 @@ import (
 type PostService struct {
 }
 
+func (p *PostService) FetchPostById(id uint) (model.Post, error) {
+	post := model.Post{}
+	err := config.DB.
+		Where("id = ?", id).
+		Preload("User").
+		Preload("Files").
+		Find(&post).Error
+
+	// Remove the hashed password in the user
+	post.User.Password = ""
+
+	return post, err
+}
+
 // Save a post
 func (p *PostService) Save(post *model.Post) error {
 	config.DB.NewRecord(post)
