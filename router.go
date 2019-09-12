@@ -23,6 +23,9 @@ func InitRouter() *gin.Engine {
 		api.POST("/auth/login", authController.Login)
 		api.POST("/auth/refresh", authController.RefreshAccessToken)
 
+		// Retrieve the videos
+		api.GET("/video/:name", storageController.DownloadVideoFile)
+
 		// Need to be logged in routes
 		loggedInGroup := api.Group("/")
 		loggedInGroup.Use(util.AuthenticationRequired())
@@ -36,7 +39,7 @@ func InitRouter() *gin.Engine {
 			loggedInGroup.GET("/posts", postController.FetchPosts)
 
 			// Storage
-			loggedInGroup.GET("/file/:path", storageController.DownloadFile)
+			loggedInGroup.GET("/file/:name", storageController.DownloadFile)
 			loggedInGroup.POST("/file/:name", storageController.UploadFile)
 		}
 	}
